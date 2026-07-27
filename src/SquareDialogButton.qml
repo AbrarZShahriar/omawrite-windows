@@ -8,6 +8,7 @@ Button {
     property bool darkMode: true
     property color labelColor: primary ? "#ffffff" : "#d0d0d0"
     property color activeColor: "#428bca"
+    property real textScale: 1
 
     leftPadding: 16
     rightPadding: 16
@@ -23,7 +24,7 @@ Button {
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         font.family: "iA Writer Mono S"
-        font.pixelSize: 12
+        font.pixelSize: Math.round(12 * control.textScale)
     }
 
     background: Rectangle {

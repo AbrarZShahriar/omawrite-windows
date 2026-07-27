@@ -158,6 +158,14 @@ void Backend::setDarkMode(bool darkMode) {
     emit darkModeChanged();
 }
 
+void Backend::setTextScale(qreal textScale) {
+    if (qFuzzyCompare(m_textScale, textScale))
+        return;
+
+    m_textScale = textScale;
+    emit textScaleChanged();
+}
+
 void Backend::attachDocument(QObject *textDocument) {
     auto *quickDocument = qobject_cast<QQuickTextDocument *>(textDocument);
     if (!quickDocument || !quickDocument->textDocument()) {

@@ -33,6 +33,41 @@ bool colorSchemeIsDark(const QVariant &value, bool *known) {
     return false;
 }
 
+// GNOME's text-scaling-factor is the desktop-wide "apparent text size" knob;
+// omarchy drives it from `omarchy display text size`, anchored so the default
+// 12px maps to 1.0. Ignore nonsense values and cap the range GNOME allows.
+qreal sanitizedTextScale(const QVariant &value, bool *known) {
+    bool ok = false;
+    const qreal scale = unwrapVariant(value).toDouble(&ok);
+    if (!ok || scale <= 0)
+        return 1.0;
+
+    *known = true;
+    return qBound(0.5, scale, 3.0);
+}
+
+// Ask the desktop portal for a single setting, returning an invalid variant
+// when the portal is missing or slow to answer; the short timeout keeps a
+// stalled portal from holding up the GUI thread.
+QVariant portalSetting(const QString &nameSpace, const QString &key) {
+    const QDBusConnection bus = QDBusConnection::sessionBus();
+    if (!bus.isConnected())
+        return {};
+
+    QDBusMessage request = QDBusMessage::createMethodCall(
+        QStringLiteral("org.freedesktop.portal.Desktop"),
+        QStringLiteral("/org/freedesktop/portal/desktop"),
+        QStringLiteral("org.freedesktop.portal.Settings"),
+        QStringLiteral("Read"));
+    request << nameSpace << key;
+
+    const QDBusReply<QDBusVariant> reply(bus.call(request, QDBus::Block, 150));
+    if (!reply.isValid())
+        return {};
+
+    return reply.value().variant();
+}
+
 bool gsettingsSchemeIsDark(const QVariant &value, bool *known) {
     const QString scheme = unwrapVariant(value).toString();
     if (scheme.contains(QStringLiteral("prefer-dark"))) {
@@ -50,6 +85,7 @@ bool gsettingsSchemeIsDark(const QVariant &value, bool *known) {
 
 SystemTheme::SystemTheme(QObject *parent) : QObject(parent) {
     m_darkMode = detectDarkMode();
+    m_textScale = detectTextScale();
 
     if (QGuiApplication::styleHints()) {
         connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged,
@@ -67,10 +103,22 @@ SystemTheme::SystemTheme(QObject *parent) : QObject(parent) {
 
 void SystemTheme::refresh() {
     setDarkMode(detectDarkMode());
+    setTextScale(detectTextScale());
 }
 
 void SystemTheme::handlePortalSettingChanged(const QString &nameSpace, const QString &key,
                                              const QDBusVariant &value) {
+    if (key == QStringLiteral("text-scaling-factor")) {
+        if (nameSpace != QStringLiteral("org.gnome.desktop.interface"))
+            return;
+
+        bool known = false;
+        const qreal scale = sanitizedTextScale(value.variant(), &known);
+        if (known)
+            setTextScale(scale);
+        return;
+    }
+
     if (key != QStringLiteral("color-scheme"))
         return;
 
@@ -106,23 +154,22 @@ bool SystemTheme::detectDarkMode() const {
 bool SystemTheme::portalDarkMode(bool *known) const {
     *known = false;
 
-    const QDBusConnection bus = QDBusConnection::sessionBus();
-    if (!bus.isConnected())
+    const QVariant scheme = portalSetting(QStringLiteral("org.freedesktop.appearance"),
+                                          QStringLiteral("color-scheme"));
+    if (!scheme.isValid())
         return false;
 
-    QDBusMessage request = QDBusMessage::createMethodCall(
-        QStringLiteral("org.freedesktop.portal.Desktop"),
-        QStringLiteral("/org/freedesktop/portal/desktop"),
-        QStringLiteral("org.freedesktop.portal.Settings"),
-        QStringLiteral("Read"));
-    request << QStringLiteral("org.freedesktop.appearance")
-            << QStringLiteral("color-scheme");
-    const QDBusReply<QDBusVariant> reply(
-        bus.call(request, QDBus::Block, 150));
-    if (!reply.isValid())
-        return false;
+    return colorSchemeIsDark(scheme, known);
+}
 
-    return colorSchemeIsDark(reply.value().variant(), known);
+qreal SystemTheme::detectTextScale() const {
+    const QVariant factor = portalSetting(QStringLiteral("org.gnome.desktop.interface"),
+                                          QStringLiteral("text-scaling-factor"));
+    if (!factor.isValid())
+        return 1.0;
+
+    bool known = false;
+    return sanitizedTextScale(factor, &known);
 }
 
 bool SystemTheme::qtDarkMode(bool *known) const {
@@ -150,4 +197,12 @@ void SystemTheme::setDarkMode(bool darkMode) {
 
     m_darkMode = darkMode;
     emit darkModeChanged(m_darkMode);
+}
+
+void SystemTheme::setTextScale(qreal textScale) {
+    if (qFuzzyCompare(m_textScale, textScale))
+        return;
+
+    m_textScale = textScale;
+    emit textScaleChanged(m_textScale);
 }

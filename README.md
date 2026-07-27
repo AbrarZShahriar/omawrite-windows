@@ -27,6 +27,10 @@ Install via the Omarchy Package Repository via the `omawrite` package. It's inst
 Unsaved drafts are recovered after an abnormal exit. Omawrite also watches open files
 and warns before an external change can replace local work.
 
+Text follows the desktop text size — `omarchy display text size`, or GNOME's
+`text-scaling-factor` — and re-flows without a restart. The default of 12px leaves
+Omawrite at the size it is designed around; larger and smaller sizes scale from there.
+
 ## Requirements
 
 - Qt 6: `qt6-base`, `qt6-declarative`, `qt6-quickcontrols2`

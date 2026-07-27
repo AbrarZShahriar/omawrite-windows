@@ -1,4 +1,5 @@
 #include <QtTest>
+#include <QFont>
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QQmlEngine>
@@ -189,6 +190,32 @@ private slots:
         QSignalSpy openDialogSpy(&backend, &Backend::openDialogRequested);
         QVERIFY(QMetaObject::invokeMethod(openButton, "clicked"));
         QCOMPARE(openDialogSpy.count(), 1);
+    }
+
+    void scalesTextWithDesktopTextSize() {
+        const QString mainQmlPath = QFINDTESTDATA("../src/Main.qml");
+        QVERIFY(!mainQmlPath.isEmpty());
+
+        Backend backend;
+        QQmlEngine engine;
+        engine.rootContext()->setContextProperty(QStringLiteral("backend"), &backend);
+        QQmlComponent component(&engine, QUrl::fromLocalFile(mainQmlPath));
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+        QScopedPointer<QObject> window(component.create());
+        QVERIFY2(window, qPrintable(component.errorString()));
+
+        QObject *editor = window->findChild<QObject *>(QStringLiteral("sourceEditor"));
+        QVERIFY(editor);
+        QCOMPARE(editor->property("font").value<QFont>().pixelSize(), 20);
+
+        // `omarchy display text size 16` sets the GNOME factor to 16/12.
+        backend.setTextScale(16.0 / 12.0);
+        QCOMPARE(window->property("editorFontPixelSize").toInt(), 27);
+        QCOMPARE(editor->property("font").value<QFont>().pixelSize(), 27);
+
+        backend.setTextScale(9.0 / 12.0);
+        QCOMPARE(window->property("editorFontPixelSize").toInt(), 15);
+        QCOMPARE(editor->property("font").value<QFont>().pixelSize(), 15);
     }
 
     void remembersLastSaveDirectory() {

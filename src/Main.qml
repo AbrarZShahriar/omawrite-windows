@@ -21,7 +21,11 @@ ApplicationWindow {
     readonly property color strongTextColor: backend.themeForeground
     readonly property color mutedColor: darkMode ? "#909191" : "#aeb1b5"
     readonly property color selectionFill: backend.themeSelection
-    readonly property int editorFontPixelSize: 20
+    // The desktop's text size knob (GNOME's text-scaling-factor, which
+    // `omarchy display text size` drives) anchored so its 12px default leaves
+    // the app at the sizes it was designed around.
+    readonly property real textScale: backend.textScale
+    readonly property int editorFontPixelSize: scaledSize(20)
     readonly property int editorWidth: Math.min(
         Math.round(writerFontMetrics.averageCharacterWidth * 65),
         Math.max(360, width - Math.round(writerFontMetrics.averageCharacterWidth * 20)))
@@ -74,6 +78,11 @@ ApplicationWindow {
         id: writerFontMetrics
         font.family: "iA Writer Mono S"
         font.pixelSize: win.editorFontPixelSize
+    }
+
+    // Every hardcoded size in the interface is expressed at text scale 1.
+    function scaledSize(pixels) {
+        return Math.max(1, Math.round(pixels * win.textScale));
     }
 
     function toggleFullScreen() {
@@ -283,6 +292,7 @@ ApplicationWindow {
         id: unsavedChangesDialog
         fileName: backend.fileName
         darkMode: win.darkMode
+        textScale: win.textScale
         textColor: win.textColor
         strongTextColor: win.strongTextColor
         activeButtonColor: backend.themeAccent
@@ -304,6 +314,7 @@ ApplicationWindow {
     ExternalChangeDialog {
         id: externalChangeDialog
         darkMode: win.darkMode
+        textScale: win.textScale
         textColor: win.textColor
         strongTextColor: win.strongTextColor
         containerWidth: win.width
@@ -701,11 +712,11 @@ ApplicationWindow {
                 text: backend.status
                 color: win.mutedColor
                 font.family: "iA Writer Mono S"
-                font.pixelSize: 11
+                font.pixelSize: win.scaledSize(11)
                 visible: text !== ""
                 elide: Text.ElideRight
                 width: Math.min(360, win.width / 3)
-                height: 16
+                height: win.scaledSize(16)
                 verticalAlignment: Text.AlignVCenter
             }
         }
@@ -719,7 +730,7 @@ ApplicationWindow {
             color: win.mutedColor
             opacity: 0.75
             font.family: "iA Writer Mono S"
-            font.pixelSize: 11
+            font.pixelSize: win.scaledSize(11)
         }
 
 
@@ -730,7 +741,7 @@ ApplicationWindow {
             anchors.topMargin: 12
             anchors.leftMargin: 12
             anchors.rightMargin: 12
-            height: win.replaceOpen ? 104 : 56
+            height: win.scaledSize(win.replaceOpen ? 104 : 56)
             visible: win.searchOpen
             z: 10
             leftPadding: 16
@@ -763,7 +774,7 @@ ApplicationWindow {
                         color: win.textColor
                         selectionColor: win.selectionFill
                         selectedTextColor: win.strongTextColor
-                        font.pixelSize: 17
+                        font.pixelSize: win.scaledSize(17)
                         clip: true
                         onTextChanged: win.updateSearch()
                         Keys.onReturnPressed: function(event) {
@@ -787,7 +798,7 @@ ApplicationWindow {
                         color: win.textColor
                         selectionColor: win.selectionFill
                         selectedTextColor: win.strongTextColor
-                        font.pixelSize: 17
+                        font.pixelSize: win.scaledSize(17)
                         Keys.onReturnPressed: replaceCurrentButton.clicked()
                     }
 
@@ -796,7 +807,7 @@ ApplicationWindow {
                         text: "Replace with"
                         visible: win.replaceOpen && replaceField.text.length === 0
                         color: win.mutedColor
-                        font.pixelSize: 17
+                        font.pixelSize: win.scaledSize(17)
                     }
 
                     Label {
@@ -804,12 +815,12 @@ ApplicationWindow {
                         text: "Find"
                         visible: searchField.text.length === 0
                         color: win.mutedColor
-                        font.pixelSize: 17
+                        font.pixelSize: win.scaledSize(17)
                     }
                 }
 
                 Label {
-                    Layout.preferredWidth: 58
+                    Layout.preferredWidth: win.scaledSize(58)
                     Layout.fillHeight: true
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
@@ -817,7 +828,7 @@ ApplicationWindow {
                         ? "0/0"
                         : (win.searchMatchIndex + 1) + "/" + win.searchMatches.length
                     color: win.darkMode ? win.textColor : "#62635f"
-                    font.pixelSize: 16
+                    font.pixelSize: win.scaledSize(16)
                 }
 
                 Button {

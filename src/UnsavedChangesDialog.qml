@@ -11,6 +11,7 @@ Dialog {
     property color activeButtonColor: "#428bca"
     property int containerWidth: 420
     property int containerHeight: 320
+    property real textScale: 1
 
     signal saveRequested()
     signal discardRequested()
@@ -40,7 +41,7 @@ Dialog {
             text: "Unsaved changes"
             color: root.strongTextColor
             font.family: "iA Writer Mono S"
-            font.pixelSize: 16
+            font.pixelSize: Math.round(16 * root.textScale)
             font.bold: true
         }
 
@@ -50,7 +51,7 @@ Dialog {
             color: root.textColor
             wrapMode: Text.Wrap
             font.family: "iA Writer Mono S"
-            font.pixelSize: 13
+            font.pixelSize: Math.round(13 * root.textScale)
         }
     }
 
@@ -68,6 +69,7 @@ Dialog {
                 id: cancelButton
                 text: "Cancel"
                 darkMode: root.darkMode
+                textScale: root.textScale
                 labelColor: root.textColor
                 KeyNavigation.left: saveButton
                 KeyNavigation.right: discardButton
@@ -80,6 +82,7 @@ Dialog {
                 id: discardButton
                 text: "Discard"
                 darkMode: root.darkMode
+                textScale: root.textScale
                 labelColor: root.textColor
                 KeyNavigation.left: cancelButton
                 KeyNavigation.right: saveButton
@@ -96,6 +99,7 @@ Dialog {
                 text: "Save"
                 primary: true
                 darkMode: root.darkMode
+                textScale: root.textScale
                 activeColor: root.activeButtonColor
                 KeyNavigation.left: discardButton
                 KeyNavigation.right: cancelButton

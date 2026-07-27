@@ -12,6 +12,7 @@ Dialog {
     property color activeButtonColor: "#428bca"
     property int containerWidth: 520
     property int containerHeight: 320
+    property real textScale: 1
 
     signal keepRequested()
     signal reloadRequested()
@@ -39,7 +40,7 @@ Dialog {
             text: root.deleted ? "File removed" : "File changed"
             color: root.strongTextColor
             font.family: "iA Writer Mono S"
-            font.pixelSize: 16
+            font.pixelSize: Math.round(16 * root.textScale)
             font.bold: true
         }
 
@@ -53,7 +54,7 @@ Dialog {
             color: root.textColor
             wrapMode: Text.Wrap
             font.family: "iA Writer Mono S"
-            font.pixelSize: 13
+            font.pixelSize: Math.round(13 * root.textScale)
         }
     }
 
@@ -71,6 +72,7 @@ Dialog {
                 id: keepButton
                 text: "Keep Mine"
                 darkMode: root.darkMode
+                textScale: root.textScale
                 labelColor: root.deleted ? "#ffffff" : root.textColor
                 primary: root.deleted
                 activeColor: root.activeButtonColor
@@ -90,6 +92,7 @@ Dialog {
                 enabled: !root.deleted
                 primary: true
                 darkMode: root.darkMode
+                textScale: root.textScale
                 activeColor: root.activeButtonColor
                 KeyNavigation.left: keepButton
                 KeyNavigation.right: keepButton
