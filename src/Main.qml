@@ -342,6 +342,60 @@ ApplicationWindow {
                 active: hovered || pressed
             }
 
+            // Flickable turns a wheel notch into a flick sized by the small
+            // application font, which crawls next to a browser. Scroll three
+            // editor lines per notch instead and animate towards a running
+            // target, so spinning the wheel picks up speed like Chromium does.
+            readonly property real wheelStep: writerFontMetrics.height * 3
+            property real wheelTargetY: 0
+
+            NumberAnimation {
+                id: wheelScroll
+                target: editorFlick
+                property: "contentY"
+                duration: 130
+                easing.type: Easing.OutCubic
+            }
+
+            WheelHandler {
+                acceptedDevices: PointerDevice.Mouse
+                onWheel: function(wheel) {
+                    editorFlick.scrollByWheel(wheel);
+                    wheel.accepted = true;
+                }
+            }
+
+            onMovementStarted: wheelScroll.stop()
+
+            function scrollByWheel(wheel) {
+                // High-resolution wheels report pixel-precise deltas; follow
+                // those one to one rather than animating past them.
+                if (wheel.pixelDelta.y !== 0 && wheel.angleDelta.y % 120 !== 0) {
+                    scrollTo(clampContentY(contentY - wheel.pixelDelta.y));
+                    return;
+                }
+
+                var notches = wheel.angleDelta.y / 120;
+                if (notches === 0)
+                    return;
+
+                var origin = wheelScroll.running ? wheelTargetY : contentY;
+                wheelTargetY = clampContentY(origin - notches * wheelStep);
+                wheelScroll.stop();
+                wheelScroll.to = wheelTargetY;
+                wheelScroll.start();
+            }
+
+            function clampContentY(y) {
+                return Math.max(0, Math.min(Math.max(0, contentHeight - height), y));
+            }
+
+            // Jump to a position, abandoning any wheel animation still running.
+            function scrollTo(y) {
+                wheelScroll.stop();
+                contentY = y;
+            }
+
             // Keep the editing caret within the viewport so writing past the
             // bottom edge scrolls the page along with the text.
             function ensureCursorVisible() {
@@ -351,9 +405,9 @@ ApplicationWindow {
                 var maxContentY = Math.max(0, contentHeight - height);
 
                 if (cursorBottom + margin > contentY + height)
-                    contentY = Math.min(maxContentY, cursorBottom + margin - height);
+                    scrollTo(Math.min(maxContentY, cursorBottom + margin - height));
                 else if (cursorTop - margin < contentY)
-                    contentY = Math.max(0, cursorTop - margin);
+                    scrollTo(Math.max(0, cursorTop - margin));
             }
 
             TextEdit {
