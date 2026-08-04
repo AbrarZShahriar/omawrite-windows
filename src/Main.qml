@@ -351,6 +351,12 @@ ApplicationWindow {
             ScrollBar.vertical: ScrollBar {
                 policy: ScrollBar.AsNeeded
                 active: hovered || pressed
+                // Stop above the footer strip so the bar doesn't overlap
+                // the word count in the bottom-right corner.
+                anchors.top: parent.top
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: win.scaledSize(32)
             }
 
             // Flickable turns a wheel notch into a flick sized by the small
