@@ -447,7 +447,12 @@ ApplicationWindow {
                 font.family: "iA Writer Mono S"
                 font.pixelSize: win.editorFontPixelSize
                 font.weight: Font.Normal
-                renderType: TextEdit.NativeRendering
+                // Native rendering hints glyphs to the pixel grid, which is
+                // crispest at whole scale factors but misplaces and unevenly
+                // rasterizes glyphs at fractional ones (and goes stale when
+                // the compositor delivers the fractional scale after the
+                // first frame). Fall back to Qt's scalable renderer there.
+                renderType: Screen.devicePixelRatio % 1 === 0 ? TextEdit.NativeRendering : TextEdit.QtRendering
                 cursorDelegate: Rectangle {
                     width: 1
                     color: win.strongTextColor
