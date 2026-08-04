@@ -354,10 +354,11 @@ ApplicationWindow {
             }
 
             // Flickable turns a wheel notch into a flick sized by the small
-            // application font, which crawls next to a browser. Scroll three
-            // editor lines per notch instead and animate towards a running
-            // target, so spinning the wheel picks up speed like Chromium does.
-            readonly property real wheelStep: writerFontMetrics.height * 3
+            // application font, which crawls next to a browser. Use Chromium's
+            // per-notch distance (3 lines of 40px) and animate towards a
+            // running target, so spinning the wheel picks up speed like
+            // Chromium does.
+            readonly property real wheelStep: win.scaledSize(120)
             property real wheelTargetY: 0
 
             NumberAnimation {
