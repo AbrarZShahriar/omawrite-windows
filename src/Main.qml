@@ -350,7 +350,10 @@ ApplicationWindow {
             boundsBehavior: Flickable.StopAtBounds
             ScrollBar.vertical: ScrollBar {
                 policy: ScrollBar.AsNeeded
-                active: hovered || pressed
+                // Wheel scrolling moves contentY directly rather than
+                // flicking the Flickable, so the bar has to be told about
+                // that activity; linger briefly after the last event.
+                active: hovered || pressed || wheelScroll.running || scrollLinger.running
                 // Stop above the footer strip so the bar doesn't overlap
                 // the word count in the bottom-right corner.
                 anchors.top: parent.top
@@ -359,26 +362,112 @@ ApplicationWindow {
                 anchors.bottomMargin: win.scaledSize(32)
             }
 
-            // Flickable turns a wheel notch into a flick sized by the small
-            // application font, which crawls next to a browser. Use Chromium's
-            // per-notch distance (3 lines of 40px) and animate towards a
-            // running target, so spinning the wheel picks up speed like
-            // Chromium does.
-            readonly property real wheelStep: win.scaledSize(120)
-            property real wheelTargetY: 0
+            Timer {
+                id: scrollLinger
+                interval: 600
+            }
 
-            NumberAnimation {
+            // Flickable turns a wheel notch into a flick sized by the small
+            // application font, which crawls next to a browser. Reproduce
+            // Chromium's wheel physics instead (cc::ScrollOffsetAnimationCurve):
+            // each notch moves 3 lines of 40px towards a running target, the
+            // animation gets shorter as the outstanding distance grows, and a
+            // notch landing mid-animation carries the current velocity into
+            // the new curve, so sustained spinning keeps picking up speed.
+            readonly property real wheelStep: win.scaledSize(120)
+
+            FrameAnimation {
                 id: wheelScroll
-                target: editorFlick
-                property: "contentY"
-                duration: 130
-                easing.type: Easing.OutCubic
+                running: false
+
+                property real startY: 0
+                property real targetY: 0
+                property real duration: 0.2
+                // Cubic bezier easing; ease-in-out (0.42, 0, 0.58, 1) for a
+                // fresh scroll, with y1 tilted on retarget so the curve's
+                // initial slope matches the velocity it inherits.
+                property real cx1: 0.42
+                property real cy1: 0
+                readonly property real cx2: 0.58
+                readonly property real cy2: 1
+
+                onTriggered: {
+                    var x = elapsedTime / duration;
+                    if (x >= 1) {
+                        editorFlick.contentY = editorFlick.snapToPixel(targetY);
+                        stop();
+                        return;
+                    }
+                    editorFlick.contentY = editorFlick.snapToPixel(
+                        startY + (targetY - startY) * curveY(solveCurve(x)));
+                }
+
+                function begin(from, to, dur, slope) {
+                    startY = from;
+                    targetY = to;
+                    duration = dur;
+                    cx1 = 0.42;
+                    cy1 = 0.42 * Math.max(-1000, Math.min(1000, slope));
+                    restart();
+                }
+
+                function retarget(newTarget) {
+                    var s = solveCurve(Math.min(1, elapsedTime / duration));
+                    var pos = startY + (targetY - startY) * curveY(s);
+                    var delta = newTarget - pos;
+                    if (Math.abs(delta) < 0.5) {
+                        editorFlick.contentY = newTarget;
+                        stop();
+                        return;
+                    }
+
+                    var velocity = curveDY(s) / Math.max(1e-6, curveDX(s))
+                        * (targetY - startY) / duration;
+                    var dur = editorFlick.wheelDuration(delta);
+                    // When already moving faster than the eased curve would,
+                    // bound the duration by the time to target at the current
+                    // velocity; the 2.5x covers the ease-out tail.
+                    if (velocity !== 0 && delta / velocity > 0)
+                        dur = Math.min(dur, delta / velocity * 2.5);
+                    begin(pos, newTarget, dur, velocity * dur / delta);
+                }
+
+                // Cubic bezier through (0,0), (cx1,cy1), (cx2,cy2), (1,1),
+                // evaluated by Newton-solving the curve parameter from x.
+                function curveX(s) { return 3 * s * (1 - s) * ((1 - s) * cx1 + s * cx2) + s * s * s; }
+                function curveY(s) { return 3 * s * (1 - s) * ((1 - s) * cy1 + s * cy2) + s * s * s; }
+                function curveDX(s) { return 3 * (1 - s) * (1 - s) * cx1 + 6 * (1 - s) * s * (cx2 - cx1) + 3 * s * s * (1 - cx2); }
+                function curveDY(s) { return 3 * (1 - s) * (1 - s) * cy1 + 6 * (1 - s) * s * (cy2 - cy1) + 3 * s * s * (1 - cy2); }
+
+                function solveCurve(x) {
+                    var s = x;
+                    for (var i = 0; i < 8; ++i) {
+                        var error = curveX(s) - x;
+                        if (Math.abs(error) < 0.001)
+                            break;
+                        var d = curveDX(s);
+                        if (Math.abs(d) < 1e-6)
+                            break;
+                        s = Math.max(0, Math.min(1, s - error / d));
+                    }
+                    return s;
+                }
             }
 
             WheelHandler {
-                acceptedDevices: PointerDevice.Mouse
+                // Wayland compositors route every pointer's scroll through
+                // one seat device that Qt classifies as a touchpad, so the
+                // device type cannot tell a mouse wheel from two-finger
+                // scrolling. Distinguish by event shape instead: discrete
+                // wheel notches arrive with only angleDelta set, while
+                // finger scrolling carries pixel-precise pixelDelta.
+                acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
                 onWheel: function(wheel) {
-                    editorFlick.scrollByWheel(wheel);
+                    scrollLinger.restart();
+                    if (wheel.pixelDelta.y !== 0)
+                        editorFlick.scrollTo(editorFlick.clampContentY(editorFlick.contentY - wheel.pixelDelta.y));
+                    else
+                        editorFlick.scrollByWheel(wheel);
                     wheel.accepted = true;
                 }
             }
@@ -386,32 +475,44 @@ ApplicationWindow {
             onMovementStarted: wheelScroll.stop()
 
             function scrollByWheel(wheel) {
-                // High-resolution wheels report pixel-precise deltas; follow
-                // those one to one rather than animating past them.
-                if (wheel.pixelDelta.y !== 0 && wheel.angleDelta.y % 120 !== 0) {
-                    scrollTo(clampContentY(contentY - wheel.pixelDelta.y));
-                    return;
-                }
-
+                // High-resolution wheels report fractional notches; feed
+                // those through the same animated path, like Chromium does
+                // for every wheel-source event.
                 var notches = wheel.angleDelta.y / 120;
                 if (notches === 0)
                     return;
 
-                var origin = wheelScroll.running ? wheelTargetY : contentY;
-                wheelTargetY = clampContentY(origin - notches * wheelStep);
-                wheelScroll.stop();
-                wheelScroll.to = wheelTargetY;
-                wheelScroll.start();
+                if (wheelScroll.running) {
+                    wheelScroll.retarget(clampContentY(wheelScroll.targetY - notches * wheelStep));
+                    return;
+                }
+
+                var target = clampContentY(contentY - notches * wheelStep);
+                if (target !== contentY)
+                    wheelScroll.begin(contentY, target, wheelDuration(target - contentY), 0);
+            }
+
+            // Chromium's inverse-delta duration: 200ms for a single notch,
+            // ramping down to 100ms once 480px are outstanding.
+            function wheelDuration(delta) {
+                var pixels = Math.abs(delta) / win.textScale;
+                return Math.max(6, Math.min(12, 14 - pixels / 60)) / 60;
             }
 
             function clampContentY(y) {
                 return Math.max(0, Math.min(Math.max(0, contentHeight - height), y));
             }
 
+            // Whole device pixels keep natively hinted glyphs from
+            // re-rasterizing mid-animation, which reads as shimmer.
+            function snapToPixel(y) {
+                return Math.round(y * Screen.devicePixelRatio) / Screen.devicePixelRatio;
+            }
+
             // Jump to a position, abandoning any wheel animation still running.
             function scrollTo(y) {
                 wheelScroll.stop();
-                contentY = y;
+                contentY = snapToPixel(y);
             }
 
             // Keep the editing caret within the viewport so writing past the
