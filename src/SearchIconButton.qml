@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Window
 
 Button {
     id: control
@@ -22,11 +23,19 @@ Button {
         Canvas {
             id: iconCanvas
             anchors.centerIn: parent
-            width: 20
-            height: 20
+
+            // Canvas rasterizes one surface pixel per logical pixel and gets
+            // upscaled blurry on hidpi screens. Draw at the physical size and
+            // scale the item back down so surface pixels match screen pixels.
+            readonly property real dpr: Screen.devicePixelRatio
+            width: 20 * dpr
+            height: 20 * dpr
+            scale: 1 / dpr
+            onDprChanged: requestPaint()
 
             onPaint: {
                 var context = getContext("2d");
+                context.setTransform(dpr, 0, 0, dpr, 0, 0);
                 context.clearRect(0, 0, width, height);
                 context.strokeStyle = control.iconColor;
                 context.lineWidth = 2;
