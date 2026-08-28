@@ -80,5 +80,6 @@ jobs:
           $zip = $zips[0]
           gh release create $env:GITHUB_REF_NAME `
             $zip.FullName ($zip.FullName + ".sha256") `
+            --repo $env:GITHUB_REPOSITORY `
             --title "OmaWrite for Windows $env:GITHUB_REF_NAME" `
             --generate-notes
