@@ -36,7 +36,7 @@ jobs:
           .\windows\build.ps1 -Version $version
 
       - name: Upload Windows package
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: omawrite-windows-x64
           path: dist/*.zip
@@ -51,7 +51,7 @@ jobs:
 
     steps:
       - name: Download the Windows package
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           name: omawrite-windows-x64
           path: release
@@ -59,8 +59,11 @@ jobs:
       - name: Create checksum
         shell: powershell
         run: |
-          $zip = Get-ChildItem -LiteralPath release -Filter *.zip -File -Recurse |
-            Select-Object -Single
+          $zips = @(Get-ChildItem -LiteralPath release -Filter *.zip -File -Recurse)
+          if ($zips.Count -ne 1) {
+            throw "Expected exactly one release ZIP, found $($zips.Count)."
+          }
+          $zip = $zips[0]
           $hash = (Get-FileHash -LiteralPath $zip.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
           Set-Content -LiteralPath ($zip.FullName + ".sha256") `
             -Value "$hash  $($zip.Name)" -Encoding Ascii
@@ -70,8 +73,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $zip = Get-ChildItem -LiteralPath release -Filter *.zip -File -Recurse |
-            Select-Object -Single
+          $zips = @(Get-ChildItem -LiteralPath release -Filter *.zip -File -Recurse)
+          if ($zips.Count -ne 1) {
+            throw "Expected exactly one release ZIP, found $($zips.Count)."
+          }
+          $zip = $zips[0]
           gh release create $env:GITHUB_REF_NAME `
             $zip.FullName ($zip.FullName + ".sha256") `
             --title "OmaWrite for Windows $env:GITHUB_REF_NAME" `
