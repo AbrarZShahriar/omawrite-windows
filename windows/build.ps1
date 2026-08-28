@@ -10,12 +10,13 @@ Set-StrictMode -Version Latest
 $root = [IO.Path]::GetFullPath((Split-Path $PSScriptRoot -Parent))
 $toolsDirectory = Join-Path $root ".tools"
 $qtDirectory = Join-Path $toolsDirectory "Qt"
-if ($QtRoot) {
-    $qtRoot = [IO.Path]::GetFullPath($QtRoot)
+$useSuppliedQt = [bool]$QtRoot
+if ($useSuppliedQt) {
+    $qtInstallRoot = [IO.Path]::GetFullPath($QtRoot)
 } else {
-    $qtRoot = Join-Path $qtDirectory "6.8.3\msvc2022_64"
+    $qtInstallRoot = Join-Path $qtDirectory "6.8.3\msvc2022_64"
 }
-$qmake = Join-Path $qtRoot "bin\qmake.exe"
+$qmake = Join-Path $qtInstallRoot "bin\qmake.exe"
 $aqt = Join-Path $toolsDirectory "aqt_x64.exe"
 $aqtUri = "https://github.com/miurahr/aqtinstall/releases/download/v3.3.0/aqt_x64.exe"
 $aqtHash = "4f74d4c95c464d238d7e17ec2d9b7f22a7c333f0f5270a62584e2b47fc765150"
@@ -58,8 +59,8 @@ function Invoke-DeveloperCommand {
 
 New-Item -ItemType Directory -Path $toolsDirectory -Force | Out-Null
 if (-not (Test-Path -LiteralPath $qmake)) {
-    if ($QtRoot) {
-        throw "qmake.exe was not found under the supplied Qt root: $qtRoot"
+    if ($useSuppliedQt) {
+        throw "qmake.exe was not found under the supplied Qt root: $qtInstallRoot"
     }
     if (-not (Test-Path -LiteralPath $aqt)) {
         Invoke-WebRequest -UseBasicParsing -Uri $aqtUri -OutFile $aqt
@@ -103,9 +104,9 @@ $oldPluginPath = $env:QT_PLUGIN_PATH
 $oldQmlPath = $env:QML2_IMPORT_PATH
 $oldPlatform = $env:QT_QPA_PLATFORM
 try {
-    $env:Path = (Join-Path $qtRoot "bin") + ";" + $env:Path
-    $env:QT_PLUGIN_PATH = Join-Path $qtRoot "plugins"
-    $env:QML2_IMPORT_PATH = Join-Path $qtRoot "qml"
+    $env:Path = (Join-Path $qtInstallRoot "bin") + ";" + $env:Path
+    $env:QT_PLUGIN_PATH = Join-Path $qtInstallRoot "plugins"
+    $env:QML2_IMPORT_PATH = Join-Path $qtInstallRoot "qml"
     $env:QT_QPA_PLATFORM = "offscreen"
     $testExecutable = Join-Path $testBuild "release\tst_omawrite.exe"
     & $testExecutable -txt
@@ -143,7 +144,7 @@ Copy-Item -LiteralPath (Join-Path $root "windows\install.ps1") `
 Copy-Item -LiteralPath (Join-Path $root "windows\uninstall.ps1") `
     -Destination (Join-Path $packageDirectory "windows")
 
-$deployTool = Join-Path $qtRoot "bin\windeployqt.exe"
+$deployTool = Join-Path $qtInstallRoot "bin\windeployqt.exe"
 $deployCommand = '"' + $deployTool + '" --release --compiler-runtime ' +
     '--no-translations --qmldir "' + (Join-Path $root "src") + '" "' +
     (Join-Path $packageDirectory "omawrite.exe") + '"'
