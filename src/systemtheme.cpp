@@ -1,14 +1,17 @@
 #include "systemtheme.h"
 
+#ifndef Q_OS_WIN
 #include <QDBusConnection>
 #include <QDBusMessage>
 #include <QDBusReply>
 #include <QDBusVariant>
+#endif
 #include <QGuiApplication>
 #include <QStyleHints>
 #include <QVariant>
 
 namespace {
+#ifndef Q_OS_WIN
 QVariant unwrapVariant(QVariant value) {
     while (value.canConvert<QDBusVariant>())
         value = value.value<QDBusVariant>().variant();
@@ -81,6 +84,7 @@ bool gsettingsSchemeIsDark(const QVariant &value, bool *known) {
 
     return false;
 }
+#endif
 }
 
 SystemTheme::SystemTheme(QObject *parent) : QObject(parent) {
@@ -92,6 +96,7 @@ SystemTheme::SystemTheme(QObject *parent) : QObject(parent) {
                 this, &SystemTheme::refresh);
     }
 
+#ifndef Q_OS_WIN
     QDBusConnection::sessionBus().connect(
         QString(),
         QStringLiteral("/org/freedesktop/portal/desktop"),
@@ -99,6 +104,7 @@ SystemTheme::SystemTheme(QObject *parent) : QObject(parent) {
         QStringLiteral("SettingChanged"),
         this,
         SLOT(handlePortalSettingChanged(QString,QString,QDBusVariant)));
+#endif
 }
 
 void SystemTheme::refresh() {
@@ -106,6 +112,7 @@ void SystemTheme::refresh() {
     setTextScale(detectTextScale());
 }
 
+#ifndef Q_OS_WIN
 void SystemTheme::handlePortalSettingChanged(const QString &nameSpace, const QString &key,
                                              const QDBusVariant &value) {
     if (key == QStringLiteral("text-scaling-factor")) {
@@ -136,13 +143,16 @@ void SystemTheme::handlePortalSettingChanged(const QString &nameSpace, const QSt
     else
         refresh();
 }
+#endif
 
 bool SystemTheme::detectDarkMode() const {
     bool known = false;
 
+#ifndef Q_OS_WIN
     const bool portalDark = portalDarkMode(&known);
     if (known)
         return portalDark;
+#endif
 
     const bool qtDark = qtDarkMode(&known);
     if (known)
@@ -151,6 +161,7 @@ bool SystemTheme::detectDarkMode() const {
     return true;
 }
 
+#ifndef Q_OS_WIN
 bool SystemTheme::portalDarkMode(bool *known) const {
     *known = false;
 
@@ -161,8 +172,12 @@ bool SystemTheme::portalDarkMode(bool *known) const {
 
     return colorSchemeIsDark(scheme, known);
 }
+#endif
 
 qreal SystemTheme::detectTextScale() const {
+#ifdef Q_OS_WIN
+    return 1.0;
+#else
     const QVariant factor = portalSetting(QStringLiteral("org.gnome.desktop.interface"),
                                           QStringLiteral("text-scaling-factor"));
     if (!factor.isValid())
@@ -170,6 +185,7 @@ qreal SystemTheme::detectTextScale() const {
 
     bool known = false;
     return sanitizedTextScale(factor, &known);
+#endif
 }
 
 bool SystemTheme::qtDarkMode(bool *known) const {

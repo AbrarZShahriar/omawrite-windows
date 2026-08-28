@@ -1,14 +1,46 @@
-# Omawrite
+# OmaWrite for Windows
 
-A dead-simple Markdown writing app built with Qt Quick and C++ that automatically follows system dark/light mode.
+[![Windows build](https://github.com/AbrarZShahriar/omawrite-windows/actions/workflows/windows.yml/badge.svg)](https://github.com/AbrarZShahriar/omawrite-windows/actions/workflows/windows.yml)
+[![Latest release](https://img.shields.io/github/v/release/AbrarZShahriar/omawrite-windows?label=Windows%20release)](https://github.com/AbrarZShahriar/omawrite-windows/releases/latest)
+
+The low-friction native Windows build of
+[Omawrite](https://github.com/omacom-io/omawrite), a focused Markdown writing
+app built with Qt Quick and C++. This is an unofficial Windows fork. It keeps
+the upstream Linux build working and follows the Windows light or dark theme.
 
 <img width="2948" height="3227" alt="screenshot-2026-06-23_15-24-08" src="https://github.com/user-attachments/assets/4e930c0d-edda-4046-b444-a59eff523329" />
 <img width="2948" height="3227" alt="screenshot-2026-06-23_15-23-23" src="https://github.com/user-attachments/assets/8ced7c26-961b-4ded-b263-84403001a951" />
 
 
-## Install
+## Start on Windows
 
-Install via the Omarchy Package Repository via the `omawrite` package. It's installed by default in new installations of Omarchy (from Quattro forward).
+1. Clone this repository or use **Code > Download ZIP**.
+2. Double-click `install-windows.cmd`.
+3. If Windows Settings opens, select OmaWrite for `.md` files.
+
+The installer downloads the latest release, verifies its SHA-256 checksum, and
+installs it for the current user. It does not require administrator access
+unless the Microsoft Visual C++ runtime is missing. You can also download a
+self-contained build from the
+[latest release](https://github.com/AbrarZShahriar/omawrite-windows/releases/latest).
+
+To remove the app, double-click `uninstall-windows.cmd` or use the Windows
+Installed apps page.
+
+Releases are built in public GitHub Actions runs and include a SHA-256 checksum.
+The executable is not currently code-signed, so Windows can show a reputation
+warning on first launch.
+
+## Build on Windows
+
+Install Visual Studio Build Tools 2022 with the C++ workload, then double-click
+`build-windows.cmd`. The build script downloads a verified Qt 6.8.3 toolchain,
+runs the test suite, deploys the runtime, and creates a release ZIP in `dist`.
+
+## Install on Omarchy
+
+Install the `omawrite` package from the Omarchy Package Repository. Omawrite is
+installed by default in new Omarchy installations from Quattro forward.
 
 ## Shortcuts
 
@@ -18,7 +50,7 @@ Install via the Omarchy Package Repository via the `omawrite` package. It's inst
 - `Ctrl+P` opens the system print dialog.
 - `Ctrl+N` opens a new Omawrite window.
 - `Ctrl+Z`, `Ctrl+Shift+Z`, and `Ctrl+Y` handle undo and redo.
-- `Super+F` toggles fullscreen. Qt maps this key as `Meta+F`.
+- `F11` or `Super+F` toggles fullscreen.
 - `Ctrl+F` searches the document. Use `Enter` or `Ctrl+G` for the next match and `Shift+Enter` for the previous match.
 - `Ctrl+H` opens find and replace.
 - `Ctrl+B`, `Ctrl+I`, and `Ctrl+K` insert bold, italic, and link Markdown.
@@ -27,11 +59,11 @@ Install via the Omarchy Package Repository via the `omawrite` package. It's inst
 Unsaved drafts are recovered after an abnormal exit. Omawrite also watches open files
 and warns before an external change can replace local work.
 
-Text follows the desktop text size — `omarchy display text size`, or GNOME's
-`text-scaling-factor` — and re-flows without a restart. The default of 12px leaves
-Omawrite at the size it is designed around; larger and smaller sizes scale from there.
+On Linux, text follows `omarchy display text size` or GNOME's
+`text-scaling-factor` and re-flows without a restart. On Windows, OmaWrite uses
+the system color scheme and the app's default text size.
 
-## Requirements
+## Linux requirements
 
 - Qt 6: `qt6-base`, `qt6-declarative`, `qt6-quickcontrols2`
 - `xdg-desktop-portal` and a portal backend
@@ -39,3 +71,6 @@ Omawrite at the size it is designed around; larger and smaller sizes scale from 
 The iA Writer Mono font is bundled under the SIL Open Font License 1.1; see
 `fonts/OFL.txt`. The font is copyright Information Architects Inc. and based on
 IBM Plex, copyright IBM Corp.
+
+The Windows package dynamically links to Qt 6 under the GNU Lesser General
+Public License v3. See `THIRD-PARTY-NOTICES.md` for distribution details.

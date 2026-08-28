@@ -1,5 +1,8 @@
 /build/
 /build-tests/
+/.build/
+/.tools/
+/dist/
 /pkg/
 /pkgbuild/pkg/
 /pkgbuild/src/

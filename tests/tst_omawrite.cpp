@@ -55,6 +55,9 @@ private slots:
     }
 
     void loadsCurrentOmarchyTheme() {
+#ifdef Q_OS_WIN
+        QSKIP("Omarchy theme integration is Linux-specific.");
+#endif
         QTemporaryDir homeDirectory;
         QVERIFY(homeDirectory.isValid());
 
