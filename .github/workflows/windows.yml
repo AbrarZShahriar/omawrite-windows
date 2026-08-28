@@ -39,7 +39,9 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: omawrite-windows-x64
-          path: dist/*.zip
+          path: |
+            dist/*.zip
+            dist/*-Setup.exe
           if-no-files-found: error
 
   release:
@@ -64,9 +66,17 @@ jobs:
             throw "Expected exactly one release ZIP, found $($zips.Count)."
           }
           $zip = $zips[0]
+          $setups = @(Get-ChildItem -LiteralPath release -Filter *-Setup.exe -File -Recurse)
+          if ($setups.Count -ne 1) {
+            throw "Expected exactly one Setup EXE, found $($setups.Count)."
+          }
+          $setup = $setups[0]
           $hash = (Get-FileHash -LiteralPath $zip.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
           Set-Content -LiteralPath ($zip.FullName + ".sha256") `
             -Value "$hash  $($zip.Name)" -Encoding Ascii
+          $hash = (Get-FileHash -LiteralPath $setup.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          Set-Content -LiteralPath ($setup.FullName + ".sha256") `
+            -Value "$hash  $($setup.Name)" -Encoding Ascii
 
       - name: Publish GitHub release
         shell: powershell
@@ -78,8 +88,14 @@ jobs:
             throw "Expected exactly one release ZIP, found $($zips.Count)."
           }
           $zip = $zips[0]
+          $setups = @(Get-ChildItem -LiteralPath release -Filter *-Setup.exe -File -Recurse)
+          if ($setups.Count -ne 1) {
+            throw "Expected exactly one Setup EXE, found $($setups.Count)."
+          }
+          $setup = $setups[0]
           gh release create $env:GITHUB_REF_NAME `
             $zip.FullName ($zip.FullName + ".sha256") `
+            $setup.FullName ($setup.FullName + ".sha256") `
             --repo $env:GITHUB_REPOSITORY `
             --title "OmaWrite for Windows $env:GITHUB_REF_NAME" `
             --generate-notes

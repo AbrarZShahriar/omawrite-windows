@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [string]$Version = "dev",
-    [string]$QtRoot = ""
+    [string]$QtRoot = "",
+    [string]$InnoSetupRoot = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,14 +21,25 @@ $qmake = Join-Path $qtInstallRoot "bin\qmake.exe"
 $aqt = Join-Path $toolsDirectory "aqt_x64.exe"
 $aqtUri = "https://github.com/miurahr/aqtinstall/releases/download/v3.3.0/aqt_x64.exe"
 $aqtHash = "4f74d4c95c464d238d7e17ec2d9b7f22a7c333f0f5270a62584e2b47fc765150"
+$innoDirectory = if ($InnoSetupRoot) {
+    [IO.Path]::GetFullPath($InnoSetupRoot)
+} else {
+    Join-Path $toolsDirectory "InnoSetup"
+}
+$innoCompiler = Join-Path $innoDirectory "ISCC.exe"
+$innoInstaller = Join-Path $toolsDirectory "innosetup-7.1.0-x64.exe"
+$innoUri = "https://github.com/jrsoftware/issrc/releases/download/is-7_1_0/innosetup-7.1.0-x64.exe"
+$innoHash = "0362a383ed217d4c4239b5933866dd96d3eb2102737da92f80f6057a4b40df2f"
 $buildRoot = Join-Path $root ".build\windows"
 $appBuild = Join-Path $buildRoot "app"
 $testBuild = Join-Path $buildRoot "tests"
 $distDirectory = Join-Path $root "dist"
 $safeVersion = [regex]::Replace($Version, '[^A-Za-z0-9._-]', '-')
-$packageName = "OmaWrite-Windows-$safeVersion-x64"
+$packageName = "OmaWrite-Windows-$safeVersion-x64-portable"
 $packageDirectory = Join-Path $distDirectory $packageName
 $packageZip = Join-Path $distDirectory ($packageName + ".zip")
+$setupName = "OmaWrite-Windows-$safeVersion-x64-Setup"
+$setupExecutable = Join-Path $distDirectory ($setupName + ".exe")
 
 function Reset-ChildDirectory {
     param(
@@ -74,6 +86,34 @@ if (-not (Test-Path -LiteralPath $qmake)) {
         --outputdir $qtDirectory
     if ($LASTEXITCODE -ne 0) {
         throw "Qt installation failed with code $LASTEXITCODE."
+    }
+}
+
+if (-not (Test-Path -LiteralPath $innoCompiler)) {
+    if ($InnoSetupRoot) {
+        throw "ISCC.exe was not found under the supplied Inno Setup root: $innoDirectory"
+    }
+    if (-not (Test-Path -LiteralPath $innoInstaller)) {
+        Invoke-WebRequest -UseBasicParsing -Uri $innoUri -OutFile $innoInstaller
+    }
+    $actualInnoHash = (Get-FileHash -LiteralPath $innoInstaller -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($actualInnoHash -ne $innoHash) {
+        throw "The Inno Setup installer checksum does not match."
+    }
+
+    $innoArguments = @(
+        "/VERYSILENT",
+        "/SUPPRESSMSGBOXES",
+        "/NORESTART",
+        "/SP-",
+        "/CURRENTUSER",
+        ('/DIR="{0}"' -f $innoDirectory)
+    )
+    $innoProcess = Start-Process -FilePath $innoInstaller `
+        -ArgumentList $innoArguments -Wait -PassThru
+    if ($innoProcess.ExitCode -ne 0 -or
+        -not (Test-Path -LiteralPath $innoCompiler)) {
+        throw "Inno Setup installation failed with code $($innoProcess.ExitCode)."
     }
 }
 
@@ -156,5 +196,27 @@ if (Test-Path -LiteralPath $packageZip) {
 Compress-Archive -Path $packageDirectory -DestinationPath $packageZip `
     -CompressionLevel Optimal
 
+if (Test-Path -LiteralPath $setupExecutable) {
+    Remove-Item -LiteralPath $setupExecutable -Force
+}
+$oldPackageDirectory = $env:OMAWRITE_PACKAGE_DIR
+$oldReleaseVersion = $env:OMAWRITE_RELEASE_VERSION
+try {
+    $env:OMAWRITE_PACKAGE_DIR = $packageDirectory
+    $env:OMAWRITE_RELEASE_VERSION = $Version
+    & $innoCompiler `
+        "--output-dir=$distDirectory" `
+        "--output-filename=$setupName" `
+        (Join-Path $root "windows\installer.iss")
+    if ($LASTEXITCODE -ne 0 -or
+        -not (Test-Path -LiteralPath $setupExecutable)) {
+        throw "Windows Setup compilation failed with code $LASTEXITCODE."
+    }
+} finally {
+    $env:OMAWRITE_PACKAGE_DIR = $oldPackageDirectory
+    $env:OMAWRITE_RELEASE_VERSION = $oldReleaseVersion
+}
+
 Write-Host "Windows tests passed."
-Write-Host "Package: $packageZip"
+Write-Host "Portable package: $packageZip"
+Write-Host "Setup executable: $setupExecutable"

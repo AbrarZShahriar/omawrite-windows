@@ -56,7 +56,8 @@ $registryPaths = @(
     "Registry::HKEY_CURRENT_USER\Software\Classes\OmaWrite.Markdown",
     "Registry::HKEY_CURRENT_USER\Software\Classes\Applications\omawrite.exe",
     "Registry::HKEY_CURRENT_USER\Software\OmaWriteWindows",
-    "Registry::HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Uninstall\OmaWriteWindows"
+    "Registry::HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Uninstall\OmaWriteWindows",
+    "Registry::HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Uninstall\{AE6883F4-1FC1-44FE-BE70-362A97A57B86}_is1"
 )
 foreach ($registryPath in $registryPaths) {
     if (Test-Path -LiteralPath $registryPath) {

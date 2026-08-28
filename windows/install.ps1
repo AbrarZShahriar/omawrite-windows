@@ -46,7 +46,7 @@ function Get-LatestPackage {
         -Uri "https://api.github.com/repos/$repository/releases/latest"
 
     $zipAsset = @($release.assets | Where-Object {
-        $_.name -match '^OmaWrite-Windows-.*-x64\.zip$'
+        $_.name -match '^OmaWrite-Windows-.*-x64-portable\.zip$'
     }) | Select-Object -First 1
     if ($null -eq $zipAsset) {
         throw "The latest release does not contain a Windows x64 package."

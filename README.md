@@ -14,28 +14,38 @@ the upstream Linux build working and follows the Windows light or dark theme.
 
 ## Start on Windows
 
-1. Clone this repository or use **Code > Download ZIP**.
-2. Double-click `install-windows.cmd`.
-3. If Windows Settings opens, select OmaWrite for `.md` files.
-
-The installer downloads the latest release, verifies its SHA-256 checksum, and
-installs it for the current user. It does not require administrator access
-unless the Microsoft Visual C++ runtime is missing. You can also download a
-self-contained build from the
+The fastest option is to download and run the x64 Setup EXE from the
 [latest release](https://github.com/AbrarZShahriar/omawrite-windows/releases/latest).
+It contains the complete app and does not download files during installation.
+
+Prefer no installer? Download the x64 portable ZIP, extract it, and run
+`omawrite.exe`. The ZIP contains the compiled app and every required Qt file.
+
+You can also clone this repository or use **Code > Download ZIP**, then
+double-click `install-windows.cmd`. If Windows Settings opens, select OmaWrite
+for `.md` files.
+
+The repository installer downloads the latest release, verifies its SHA-256
+checksum, and installs it for the current user. It does not require
+administrator access unless the Microsoft Visual C++ runtime is missing.
 
 To remove the app, double-click `uninstall-windows.cmd` or use the Windows
 Installed apps page.
 
-Releases are built in public GitHub Actions runs and include a SHA-256 checksum.
+Releases are built in public GitHub Actions runs and include SHA-256 checksums.
 The executable is not currently code-signed, so Windows can show a reputation
 warning on first launch.
+
+The current build targets Intel and AMD x86-64 computers running Windows 11.
+Windows 11 does not have a 32-bit x86 edition. ARM64 is not currently a native
+build target.
 
 ## Build on Windows
 
 Install Visual Studio Build Tools 2022 with the C++ workload, then double-click
 `build-windows.cmd`. The build script downloads a verified Qt 6.8.3 toolchain,
-runs the test suite, deploys the runtime, and creates a release ZIP in `dist`.
+runs the test suite, deploys the runtime, and creates a portable ZIP plus a
+Setup EXE in `dist`.
 
 ## Install on Omarchy
 
@@ -44,9 +54,9 @@ installed by default in new Omarchy installations from Quattro forward.
 
 ## Shortcuts
 
-- `Ctrl+S` saves. Unsaved documents use the XDG desktop portal file picker.
+- `Ctrl+S` saves. Unsaved documents use the system file picker.
 - `Ctrl+Shift+S` saves as.
-- `Ctrl+O` opens a Markdown file through the portal picker.
+- `Ctrl+O` opens a Markdown file through the system file picker.
 - `Ctrl+P` opens the system print dialog.
 - `Ctrl+N` opens a new Omawrite window.
 - `Ctrl+Z`, `Ctrl+Shift+Z`, and `Ctrl+Y` handle undo and redo.
