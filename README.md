@@ -4,7 +4,7 @@
 [![Latest release](https://img.shields.io/github/v/release/AbrarZShahriar/omawrite-windows?label=Windows%20release)](https://github.com/AbrarZShahriar/omawrite-windows/releases/latest)
 
 The low-friction native Windows build of
-[Omawrite](https://github.com/omacom-io/omawrite), a focused Markdown writing
+[Omawrite](https://github.com/omacom/omawrite), a focused Markdown writing
 app built with Qt Quick and C++. This is an unofficial Windows fork. It keeps
 the upstream Linux build working and follows the Windows light or dark theme.
 
