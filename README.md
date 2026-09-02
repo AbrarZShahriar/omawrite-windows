@@ -11,6 +11,30 @@ the upstream Linux build working and follows the Windows light or dark theme.
 <img width="2948" height="3227" alt="screenshot-2026-06-23_15-24-08" src="https://github.com/user-attachments/assets/4e930c0d-edda-4046-b444-a59eff523329" />
 <img width="2948" height="3227" alt="screenshot-2026-06-23_15-23-23" src="https://github.com/user-attachments/assets/8ced7c26-961b-4ded-b263-84403001a951" />
 
+## Engineering case study
+
+The upstream application was designed for a Linux/Omarchy environment. Its
+desktop integration assumed DBus, XDG portals, and Linux theme settings, while
+Windows users needed a native executable with predictable installation and no
+compatibility layer.
+
+The Windows port keeps the upstream Linux behavior intact and isolates
+platform-specific decisions at the operating-system boundary:
+
+- Windows theme detection uses Qt's native color-scheme API instead of a
+  parallel application theme system.
+- The build uses Qt 6.8.3 and MSVC 2022 x64, then runs `windeployqt` to collect
+  the actual Qt runtime and QML dependency tree.
+- The same release pipeline produces a portable ZIP and a per-user installer,
+  with SHA-256 checksums for both artifacts.
+- The installer registers OmaWrite as a Markdown application, supports clean
+  uninstall, and does not require administrator access in the normal case.
+- GitHub Actions rebuilds and tests the Windows package from source. The
+  Windows test suite passes 11 tests and skips one Linux-specific check.
+
+The result is a release a user can evaluate immediately and a build another
+engineer can reproduce, inspect, or extend.
+
 
 ## Start on Windows
 
