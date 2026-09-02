@@ -58,7 +58,13 @@ Installed apps page.
 
 Releases are built in public GitHub Actions runs and include SHA-256 checksums.
 The executable is not currently code-signed, so Windows can show a reputation
-warning on first launch.
+warning on first launch. See the [code signing policy](CODE_SIGNING_POLICY.md)
+for the release boundary.
+
+The editor has no telemetry or network client. It reads and writes local files;
+opening a link hands that link to the default browser. The optional repository
+installer contacts GitHub only when you run it to download a release. See the
+[privacy statement](PRIVACY.md) for the complete boundary.
 
 The current build targets Intel and AMD x86-64 computers running Windows 11.
 Windows 11 does not have a 32-bit x86 edition. ARM64 is not currently a native
@@ -108,3 +114,6 @@ IBM Plex, copyright IBM Corp.
 
 The Windows package dynamically links to Qt 6 under the GNU Lesser General
 Public License v3. See `THIRD-PARTY-NOTICES.md` for distribution details.
+
+Security reports are handled privately as described in
+[SECURITY.md](SECURITY.md).

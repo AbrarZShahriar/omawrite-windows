@@ -1,0 +1,62 @@
+name: Bug report
+description: Report a reproducible problem in the Windows build
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check the latest release before filing a report. Do not attach private document contents.
+  - type: input
+    id: version
+    attributes:
+      label: OmaWrite version
+      placeholder: v0.5.0-windows.1
+    validations:
+      required: true
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      options:
+        - Setup EXE
+        - Portable ZIP
+        - Local source build
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      description: Run `winver` and include the displayed edition and build.
+      placeholder: Windows 11 24H2, build 26100
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Open ...
+        2. Choose ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context
+      description: Add screenshots or a minimal non-private Markdown file if useful.
