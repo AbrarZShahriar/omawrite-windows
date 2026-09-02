@@ -7,10 +7,12 @@ against that release before reporting it when possible.
 
 ## Report a vulnerability
 
-Please report vulnerabilities privately to `a.zshahriar@gmail.com`. Include the
-affected version, package type, observed impact, and minimal reproduction steps.
-Do not disclose an unpatched vulnerability or personal document contents in a
-public issue.
+Use GitHub's [private vulnerability reporting
+form](https://github.com/AbrarZShahriar/omawrite-windows/security/advisories/new).
+Include the affected version, package type, observed impact, and minimal
+reproduction steps. Do not disclose an unpatched vulnerability or personal
+document contents in a public issue. If the form is unavailable, email
+`a.zshahriar@gmail.com`.
 
 Ordinary defects and feature requests belong in the public
 [issue tracker](https://github.com/AbrarZShahriar/omawrite-windows/issues).
